@@ -27,4 +27,10 @@ std::unique_ptr<ExposureGenerator> MicroExposureGeneratorBuilder::Build()
   return absl::make_unique<MicroExposureGenerator>();
 }
 
+std::unique_ptr<ExposureGenerator> MicroExposureGeneratorBuilder::Build(
+    const std::vector<std::vector<float>>& proximity_trace_distribution) const {
+  return absl::make_unique<MicroExposureGenerator>(
+      proximity_trace_distribution);
+}
+
 }  // namespace abesim

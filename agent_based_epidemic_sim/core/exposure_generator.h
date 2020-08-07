@@ -17,7 +17,10 @@
 #ifndef AGENT_BASED_EPIDEMIC_SIM_CORE_EXPOSURE_GENERATOR_H_
 #define AGENT_BASED_EPIDEMIC_SIM_CORE_EXPOSURE_GENERATOR_H_
 
+#include <utility>
+
 #include "absl/time/time.h"
+#include "agent_based_epidemic_sim/core/constants.h"
 #include "agent_based_epidemic_sim/core/event.h"
 
 namespace abesim {
@@ -26,11 +29,19 @@ namespace abesim {
 class ExposureGenerator {
  public:
   virtual ~ExposureGenerator() = default;
+  // TODO: Deprecate this constructor.
   // Returns an Exposure object based on an implemented scheme.
   virtual Exposure Generate(const absl::Time start_time,
                             const absl::Duration duration,
                             const float infectivity,
                             const float symptom_factor) = 0;
+
+  // Returns a pair of Exposures mirroring a single exposure event between a
+  // pair of hosts.
+  virtual std::pair<Exposure, Exposure> Generate(
+      const absl::Time start_time, const absl::Duration duration,
+      const std::pair<float, float> infectivity,
+      const std::pair<float, float> symptom_factor) = 0;
 };
 
 }  // namespace abesim

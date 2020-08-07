@@ -91,6 +91,41 @@ cc_test(
 )
 
 cc_library(
+    name = "hazard_aggregated_transmission_model",
+    srcs = [
+        "hazard_aggregated_transmission_model.cc",
+    ],
+    hdrs = [
+        "hazard_aggregated_transmission_model.h",
+    ],
+    deps = [
+        ":constants",
+        ":event",
+        ":integral_types",
+        ":transmission_model",
+        "//agent_based_epidemic_sim/port:logging",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "hazard_aggregated_transmission_model_test",
+    srcs = [
+        "hazard_aggregated_transmission_model_test.cc",
+    ],
+    deps = [
+        ":hazard_aggregated_transmission_model",
+        ":integral_types",
+        ":visit",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "distribution_sampler",
     hdrs = [
         "distribution_sampler.h",
@@ -142,6 +177,7 @@ cc_library(
         "event.h",
     ],
     deps = [
+        ":constants",
         ":integral_types",
         ":visit",
         "//agent_based_epidemic_sim/util:ostream_overload",
@@ -203,6 +239,7 @@ cc_library(
         "exposure_generator_builder.h",
     ],
     deps = [
+        ":constants",
         ":event",
         "@com_google_absl//absl/time",
     ],
@@ -334,11 +371,24 @@ cc_library(
         "micro_exposure_generator_builder.h",
     ],
     deps = [
+        ":constants",
         ":event",
         ":exposure_generator",
         ":parameter_distribution_cc_proto",
+        "//agent_based_epidemic_sim/port:logging",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/time",
+    ],
+)
+
+cc_test(
+    name = "micro_exposure_generator_test",
+    srcs = ["micro_exposure_generator_test.cc"],
+    deps = [
+        ":micro_exposure_generator",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -377,7 +427,10 @@ cc_test(
 cc_library(
     name = "constants",
     hdrs = ["constants.h"],
-    deps = [":integral_types"],
+    deps = [
+        ":integral_types",
+        "@com_google_absl//absl/time",
+    ],
 )
 
 cc_library(

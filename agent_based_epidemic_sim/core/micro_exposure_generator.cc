@@ -14,9 +14,13 @@
 
 #include "agent_based_epidemic_sim/core/micro_exposure_generator.h"
 
+#include <algorithm>
 #include <iostream>
+#include <limits>
 
+#include "absl/random/distributions.h"
 #include "absl/time/time.h"
+#include "agent_based_epidemic_sim/core/constants.h"
 #include "agent_based_epidemic_sim/core/event.h"
 #include "agent_based_epidemic_sim/core/parameter_distribution.pb.h"
 
@@ -26,29 +30,58 @@ Exposure MicroExposureGenerator::Generate(absl::Time start_time,  // unused
                                           absl::Duration duration,
                                           float infectivity,
                                           float symptom_factor) {
-  std::array<uint8, kNumberMicroExposureBuckets> micro_exposure_counts = {};
-
-  // TODO: Use a distribution of duration@distance once it is
-  // figured out.
-  // Generate counts for each bucket and never over assign
-  // duration.
-  const uint8 total_counts_to_assign = absl::ToInt64Minutes(duration);
-
-  if (total_counts_to_assign != 0) {
-    const uint8 buckets_to_fill =
-        std::min(kNumberMicroExposureBuckets, total_counts_to_assign);
-    const uint8 counts_per_bucket = total_counts_to_assign / buckets_to_fill;
-
-    for (auto i = 0; i < buckets_to_fill; i++) {
-      micro_exposure_counts[i] = counts_per_bucket;
-    }
-  }
   return {
       .duration = duration,
-      .micro_exposure_counts = micro_exposure_counts,
       .infectivity = infectivity,
       .symptom_factor = symptom_factor,
   };
+}
+
+std::pair<Exposure, Exposure> MicroExposureGenerator::Generate(
+    absl::Time start_time,    // unused
+    absl::Duration duration,  // unused
+    std::pair<float, float> infectivity,
+    std::pair<float, float> symptom_factor) {
+  const std::array<float, kMaxTraceLength> proximity_trace =
+      (proximity_trace_distribution_.empty()) ? GenerateProximityTrace()
+                                              : DrawProximityTrace();
+
+  const uint8 trace_length = std::count_if(
+      proximity_trace.begin(), proximity_trace.end(), [](float proximity) {
+        return proximity < std::numeric_limits<float>::max();
+      });
+  const absl::Duration trace_duration = trace_length * kProximityTraceInterval;
+
+  return {{
+              .duration = trace_duration,
+              .proximity_trace = proximity_trace,
+              .infectivity = infectivity.first,
+              .symptom_factor = symptom_factor.first,
+          },
+          {
+              .duration = trace_duration,
+              .proximity_trace = proximity_trace,
+              .infectivity = infectivity.second,
+              .symptom_factor = symptom_factor.second,
+          }};
+}
+
+std::array<float, kMaxTraceLength>
+MicroExposureGenerator::GenerateProximityTrace() {
+  std::array<float, kMaxTraceLength> full_length_proximity_trace;
+  full_length_proximity_trace.fill(std::numeric_limits<float>::max());
+
+  uint8 proximity_trace_length = absl::Uniform<uint8>(gen_, 1, kMaxTraceLength);
+  for (uint8 i = 0; i < proximity_trace_length; i++) {
+    full_length_proximity_trace[i] = absl::Uniform<float>(gen_, 0.0f, 10.0f);
+  }
+  return full_length_proximity_trace;
+}
+
+std::array<float, kMaxTraceLength>
+MicroExposureGenerator::DrawProximityTrace() {
+  return proximity_trace_distribution_[absl::Uniform<int>(
+      gen_, 0, proximity_trace_distribution_.size() - 1)];
 }
 
 }  // namespace abesim
