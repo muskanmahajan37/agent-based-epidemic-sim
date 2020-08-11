@@ -27,7 +27,12 @@ class ExposureGeneratorBuilder {
  public:
   ExposureGeneratorBuilder() = default;
   virtual ~ExposureGeneratorBuilder() = default;
+  // TODO: Deprecate this constructor.
   virtual std::unique_ptr<ExposureGenerator> Build() const = 0;
+
+  virtual std::unique_ptr<ExposureGenerator> Build(
+      const std::vector<std::vector<float>>& proximity_trace_distribution)
+      const = 0;
 };
 
 }  // namespace abesim

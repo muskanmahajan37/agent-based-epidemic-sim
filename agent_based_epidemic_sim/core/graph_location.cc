@@ -15,6 +15,7 @@
 #include "agent_based_epidemic_sim/core/graph_location.h"
 
 #include <memory>
+#include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/random/distributions.h"
@@ -68,28 +69,25 @@ class GraphLocation : public Location {
       auto second_symptom_factor = symptom_factor.find(edge.second);
       if (second_symptom_factor == symptom_factor.end()) continue;
 
-      // If two agents are connected by an edge, we  randomly generate a
-      // duration and the corresponding micro exposures that result.
-      const float mean = absl::FDivDuration(visit_length_mean_, absl::Hours(1));
-      const float stdev =
-          absl::FDivDuration(visit_length_stddev_, absl::Hours(1));
-      const absl::Duration overlap =
-          absl::Hours(absl::Gaussian(gen_, mean, stdev));
+      const std::pair<float, float> infectivity = {first_infectivity->second,
+                                                   second_infectivity->second};
+      const std::pair<float, float> symptom_factor = {
+          first_symptom_factor->second, second_symptom_factor->second};
+
+      const std::pair<Exposure, Exposure> exposures =
+          exposure_generator_->Generate(absl::UnixEpoch(), absl::ZeroDuration(),
+                                        infectivity, symptom_factor);
 
       infection_broker->Send(
           {{
                .agent_uuid = edge.first,
-               .exposure = exposure_generator_->Generate(
-                   absl::UnixEpoch(), overlap, second_infectivity->second,
-                   second_symptom_factor->second),
+               .exposure = exposures.second,  // Use health data from second.
                .exposure_type = InfectionOutcomeProto::CONTACT,
                .source_uuid = edge.second,
            },
            {
                .agent_uuid = edge.second,
-               .exposure = exposure_generator_->Generate(
-                   absl::UnixEpoch(), overlap, first_infectivity->second,
-                   first_symptom_factor->first),
+               .exposure = exposures.first,  // Use health data from first.
                .exposure_type = InfectionOutcomeProto::CONTACT,
                .source_uuid = edge.first,
            }});
