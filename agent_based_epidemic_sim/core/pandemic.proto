@@ -77,3 +77,25 @@ message InfectionOutcomeProto {
   int64 source_uuid = 6;
   reserved 2, 3;  // deprecated fields.
 }
+
+// This message is used by downstream code for training the risk score model.
+// See (broken link) for further discussion.
+message DataForLearning {
+  enum TestResult {
+    UNKNOWN = 0;
+    POSITIVE = 1;
+    NEGATIVE = 2;
+  }
+  message Exposure {
+    google.protobuf.Timestamp exposure_time = 1;
+    google.protobuf.Duration duration_since_symptom_onset = 2;
+    repeated float proximity_trace = 3;
+  }
+  message ExposureResult {
+    int64 agent_uuid = 1;
+    TestResult test_result = 2;
+    google.protobuf.Timestamp test_time = 3;
+    repeated Exposure exposures = 4;
+  }
+  repeated ExposureResult exposure_results = 1;
+}
